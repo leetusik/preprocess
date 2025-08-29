@@ -40,7 +40,7 @@ app.add_middleware(
 class CreateJobRequest(BaseModel):
     filePath: str
     recursive: Optional[bool] = False
-    uploadform: Optional[str] = "all"
+    uploadfrom: Optional[str] = "MG"
 
 class CreateJobResponse(BaseModel):
     multiConvertIdx: int
@@ -54,20 +54,6 @@ class StatusResponse(BaseModel):
     outdir: Optional[str] = None
     outfile: Optional[str] = None
 
-# ======= Helper Functions =======
-def file_matches(path: str, uploadform: str) -> bool:
-    if uploadform is None or str(uploadform).lower() == "all":
-        return True
-    ext = os.path.splitext(path)[1].lower()
-    uf = str(uploadform).lower()
-    if uf == "image":
-        return ext in IMAGE_EXT
-    if uf == "document":
-        if ext in DOC_EXT:
-            return True
-        mime, _ = mimetypes.guess_type(path)
-        return (mime or "").startswith("text/")
-    return True
 
 # ======= 단순 증가 인덱스 =======
 _idx_lock = threading.Lock()
@@ -80,23 +66,22 @@ def next_index() -> int:
         return _idx_value
 
 # ======= 파일 개수 세기 =======
-def count_files(base_path: str, recursive: bool, uploadform: str) -> int:
+def count_files(base_path: str, recursive: bool) -> int:
     if not os.path.exists(base_path):
         return 0
     if os.path.isfile(base_path):
-        return 1 if file_matches(base_path, uploadform) else 0
+        return 1 
     total = 0
     if not recursive:
         for name in os.listdir(base_path):
             p = os.path.join(base_path, name)
-            if os.path.isfile(p) and file_matches(p, uploadform):
+            if os.path.isfile(p):
                 total += 1
     else:
         for root, _, files in os.walk(base_path):
             for name in files:
                 p = os.path.join(root, name)
-                if file_matches(p, uploadform):
-                    total += 1
+                total += 1
     return total
 
 # ======= 상태 저장소 (0 -> 3 -> 1 -> 0 ...) =======
@@ -168,7 +153,7 @@ async def create_job(request: CreateJobRequest):
 
     # 파일 개수 (기존 로직 유지)
     try:
-        processed = count_files(request.filePath, request.recursive, request.uploadform)
+        processed = count_files(request.filePath, request.recursive)
     except Exception:
         processed = 0
 
