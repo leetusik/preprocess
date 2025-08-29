@@ -195,7 +195,7 @@ async def get_job_result(multiConvertIdx: int = Query(..., description="Job inde
         result = "등록완료"
     elif status == 1:
         # outfiles 경로 요청 시 경로 정보 반환(추가로 outfile도 함께 제공)
-        result = meta.get("outdir", "outfiles 경로")
+        result = "전처리 완료"
     elif status == 2:
         result = "실패사유"
     elif status == 3:
